@@ -17,7 +17,7 @@ namespace GenericRepositoryPatternWeb.Controllers
         }
         public ActionResult Index()
         {
-            var data = _gradeRepository.GetAll();
+            var data = _gradeRepository.GetGradesBySection("Section7");
             return Content("");
         }
     }

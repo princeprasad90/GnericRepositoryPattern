@@ -1,5 +1,4 @@
-﻿using GenericRepositoryPatternWeb.Dependency;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -13,8 +12,8 @@ namespace GenericRepositoryPatternWeb
         protected void Application_Start()
         {
             AreaRegistration.RegisterAllAreas();
+            UnityConfig.RegisterComponents();
             RouteConfig.RegisterRoutes(RouteTable.Routes);
-            IoCConfig.RegisterDependencies();
         }
     }
 }

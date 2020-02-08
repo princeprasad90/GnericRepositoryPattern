@@ -8,8 +8,8 @@
     <ProjectGuid>{14B1009C-5698-4D8B-9D6F-28F4035DD995}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>GnericRepositoryPatternData</RootNamespace>
-    <AssemblyName>GnericRepositoryPatternData</AssemblyName>
+    <RootNamespace>GenericRepositoryPatternData</RootNamespace>
+    <AssemblyName>GenericRepositoryPatternData</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>

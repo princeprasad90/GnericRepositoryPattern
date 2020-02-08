@@ -1,5 +1,4 @@
-﻿using GenericRepositoryPatternData.Model;
-using GenericRepositoryPatternServices.Interfaces;
+﻿using GenericRepositoryPatternServices.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
@@ -12,51 +11,97 @@ namespace GenericRepositoryPatternServices.Repository
 {
     public class Repository<T> : IRepository<T> where T : class
     {
-        public SampleEntities _context = null;
-        private readonly DbSet<T> table = null;
-        public Repository()
+        private readonly IUnitOfWork _unitOfWork;
+        protected readonly DbSet<T> table = null;
+        public Repository(IUnitOfWork unitOfWork)
         {
-            _context = new SampleEntities();
-            table = _context.Set<T>();
-        }
-        public void Add(T entity)
-        {
-            table.Add(entity);
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException("UnitOfWork");
+            table = _unitOfWork.Db.Set<T>();
         }
 
-        public void AddRange(IEnumerable<T> entities)
+        public T SingleOrDefault(Expression<Func<T, bool>> whereCondition)
         {
-            _context.Set<T>().AddRange(entities);
+            var dbResult = table.Where(whereCondition).FirstOrDefault();
+            return dbResult;
         }
-
-        public IEnumerable<T> Find(Expression<Func<T, bool>> predicate)
-        {
-            return _context.Set<T>().Where(predicate);
-        }
-
-        public T Get(int id)
-        {
-            return _context.Set<T>().Find(id);
-        }
-
         public IEnumerable<T> GetAll()
         {
-            return _context.Set<T>().ToList();
+            return table.ToList();
         }
 
-        public void Remove(T entity)
+        public IEnumerable<T> GetAll(Expression<Func<T, bool>> whereCondition)
         {
-            _context.Set<T>().Remove(entity);
+            return table.Where(whereCondition).ToList();
         }
 
-        public void RemoveRange(IEnumerable<T> entities)
+        public virtual T Insert(T entity)
         {
-            _context.Set<T>().RemoveRange(entities);
+            dynamic obj = table.Add(entity);
+            _unitOfWork.Db.SaveChanges();
+            return obj;
+        }
+        public virtual void Update(T entity)
+        {
+            table.Attach(entity);
+            _unitOfWork.Db.Entry(entity).State = EntityState.Modified;
+            _unitOfWork.Db.SaveChanges();
         }
 
-        public void Save()
+        public virtual void UpdateAll(IList<T> entities)
         {
-            _context.SaveChanges();
+            foreach (var entity in entities)
+            {
+                table.Attach(entity);
+                _unitOfWork.Db.Entry(entity).State = EntityState.Modified;
+            }
+            _unitOfWork.Db.SaveChanges();
         }
+
+        public void Delete(Expression<Func<T, bool>> whereCondition)
+        {
+            IEnumerable<T> entities = this.GetAll(whereCondition);
+            foreach (T entity in entities)
+            {
+                if (_unitOfWork.Db.Entry(entity).State == EntityState.Detached)
+                {
+                    table.Attach(entity);
+                }
+                table.Remove(entity);
+            }
+            _unitOfWork.Db.SaveChanges();
+        }
+        public T SingleOrDefaultOrderBy(Expression<Func<T, bool>> whereCondition, Expression<Func<T, int>> orderBy, string direction)
+        {
+            if (direction == "ASC")
+            {
+                return table.Where(whereCondition).OrderBy(orderBy).FirstOrDefault();
+
+            }
+            else
+            {
+                return table.Where(whereCondition).OrderByDescending(orderBy).FirstOrDefault();
+            }
+        }
+
+        public bool Exists(Expression<Func<T, bool>> whereCondition)
+        {
+            return table.Any(whereCondition);
+        }
+
+        public int Count(Expression<Func<T, bool>> whereCondition)
+        {
+            return table.Where(whereCondition).Count();
+        }
+
+        public IEnumerable<T> GetPagedRecords(Expression<Func<T, bool>> whereCondition, Expression<Func<T, string>> orderBy, int pageNo, int pageSize)
+        {
+            return (table.Where(whereCondition).OrderBy(orderBy).Skip((pageNo - 1) * pageSize).Take(pageSize)).AsEnumerable();
+        }
+
+        public IEnumerable<T> ExecWithStoreProcedure(string query, params object[] parameters)
+        {
+            return table.SqlQuery(query, parameters);
+        }
+
     }
 }

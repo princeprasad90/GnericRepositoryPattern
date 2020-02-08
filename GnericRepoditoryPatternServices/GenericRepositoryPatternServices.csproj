@@ -8,8 +8,8 @@
     <ProjectGuid>{467ABDD6-6295-46FA-BC4C-9668F88BB281}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>GnericRepoditoryPatternServices</RootNamespace>
-    <AssemblyName>GnericRepoditoryPatternServices</AssemblyName>
+    <RootNamespace>GenericRepositoryPatternServices</RootNamespace>
+    <AssemblyName>GenericRepositoryPatternServices</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -53,9 +53,11 @@
   <ItemGroup>
     <Compile Include="Interfaces\IGradeRepository.cs" />
     <Compile Include="Interfaces\IRepository.cs" />
+    <Compile Include="Interfaces\IUnitOfWork.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repository\GradeRepository.cs" />
     <Compile Include="Repository\Repository.cs" />
+    <Compile Include="Repository\UnitOfWork.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\GnericRepoditoryPatternData\GenericRepositoryPatternData.csproj">
