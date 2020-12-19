@@ -13,20 +13,51 @@ namespace GenericRepositoryPatternServices.Repository
     {
         private readonly IUnitOfWork _unitOfWork;
         protected readonly DbSet<T> table = null;
+
         public Repository(IUnitOfWork unitOfWork)
         {
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException("UnitOfWork");
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException("EmployeeContext");
             table = _unitOfWork.Db.Set<T>();
         }
+
+        public IQueryable<T> Table => table;
+
 
         public T SingleOrDefault(Expression<Func<T, bool>> whereCondition)
         {
             var dbResult = table.Where(whereCondition).FirstOrDefault();
             return dbResult;
         }
+        public async Task<T> SingleOrDefaultAsync(Expression<Func<T, bool>> whereCondition)
+        {
+            var dbResult = await table.Where(whereCondition).FirstOrDefaultAsync();
+            return dbResult;
+        }
+
+        public T SingleOrDefaultOrderBy(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy)
+        {
+            IQueryable<T> query = table.Where(whereCondition);
+            return orderBy(query).FirstOrDefault();
+        }
+
+        public T FindByIdInt(int? id)
+        {
+            return table.Find(id);
+        }
+
+        public T FindByIdLong(long? id)
+        {
+            return table.Find(id);
+        }
+
         public IEnumerable<T> GetAll()
         {
             return table.ToList();
+        }
+
+        public IQueryable<T> GetAllAsIQueryable()
+        {
+            return table;
         }
 
         public IEnumerable<T> GetAll(Expression<Func<T, bool>> whereCondition)
@@ -36,15 +67,28 @@ namespace GenericRepositoryPatternServices.Repository
 
         public virtual T Insert(T entity)
         {
-            dynamic obj = table.Add(entity);
+            table.Add(entity);
             _unitOfWork.Db.SaveChanges();
-            return obj;
+            return entity;
         }
-        public virtual void Update(T entity)
+        public virtual async Task<T> InsertAsync(T entity)
+        {
+            table.Add(entity);
+            await _unitOfWork.Db.SaveChangesAsync();
+            return entity;
+        }
+        public virtual void InsertList(IList<T> entityList)
+        {
+            table.AddRange(entityList);
+            _unitOfWork.Db.SaveChanges();
+        }
+
+        public virtual T Update(T entity)
         {
             table.Attach(entity);
             _unitOfWork.Db.Entry(entity).State = EntityState.Modified;
             _unitOfWork.Db.SaveChanges();
+            return entity;
         }
 
         public virtual void UpdateAll(IList<T> entities)
@@ -70,18 +114,6 @@ namespace GenericRepositoryPatternServices.Repository
             }
             _unitOfWork.Db.SaveChanges();
         }
-        public T SingleOrDefaultOrderBy(Expression<Func<T, bool>> whereCondition, Expression<Func<T, int>> orderBy, string direction)
-        {
-            if (direction == "ASC")
-            {
-                return table.Where(whereCondition).OrderBy(orderBy).FirstOrDefault();
-
-            }
-            else
-            {
-                return table.Where(whereCondition).OrderByDescending(orderBy).FirstOrDefault();
-            }
-        }
 
         public bool Exists(Expression<Func<T, bool>> whereCondition)
         {
@@ -93,15 +125,61 @@ namespace GenericRepositoryPatternServices.Repository
             return table.Where(whereCondition).Count();
         }
 
-        public IEnumerable<T> GetPagedRecords(Expression<Func<T, bool>> whereCondition, Expression<Func<T, string>> orderBy, int pageNo, int pageSize)
+        public IEnumerable<T> Filter(Expression<Func<T, bool>> filter = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, string includeProperties = "", int? page = null,
+           int? pageSize = null)
         {
-            return (table.Where(whereCondition).OrderBy(orderBy).Skip((pageNo - 1) * pageSize).Take(pageSize)).AsEnumerable();
+            IQueryable<T> query = table;
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+
+            if (orderBy != null)
+            {
+                query = orderBy(query);
+            }
+
+            if (includeProperties != null)
+            {
+                foreach (
+                    var includeProperty in includeProperties.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(includeProperty);
+                }
+            }
+
+            if (page != null && pageSize != null)
+            {
+                query = query.Skip((page.Value - 1) * pageSize.Value).Take(pageSize.Value);
+            }
+
+            return query.ToList();
         }
 
-        public IEnumerable<T> ExecWithStoreProcedure(string query, params object[] parameters)
-        {
-            return table.SqlQuery(query, parameters);
-        }
 
+        //    public IEnumerable<TResult> GetFilteredResult<TResult>(Expression<Func<T, TResult>> selector, Expression<Func<T, bool>> predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null)
+        //    {
+        //        IQueryable<T> query = table;
+
+        //        if (include != null)
+        //        {
+        //            query = include(query);
+        //        }
+
+        //        if (predicate != null)
+        //        {
+        //            query = query.Where(predicate);
+        //        }
+
+        //        if (orderBy != null)
+        //        {
+        //            return orderBy(query).Select(selector).AsEnumerable();
+        //        }
+        //        else
+        //        {
+        //            return query.Select(selector);
+        //        }
+        //    }
+        //}
     }
 }
